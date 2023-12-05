@@ -240,10 +240,6 @@ const bounds={
 };
 
 
-const textBoxWidth=renderer.domElement.width;
-const textBoxHeight=renderer.domElement.height;
-//document.createElement('div',)
-
 let curText='';
 function renderText(text){
     if(text==curText)
