@@ -103,7 +103,7 @@ function createScene(){
                 scale:new three.Vector3(1,1,1)
             },
             skyBox:{
-                position:new three.Vector3(0,0,0),
+                position:new three.Vector3(0,1.5,0),
                 scale:new three.Vector3(1,1,1)
             }
         };
@@ -142,7 +142,7 @@ function createScene(){
         GuiObjects.museum=data.scene.children[0];
     });
 
-    const skyGeometry=new three.SphereGeometry(5);
+    const skyGeometry=new three.SphereGeometry(1);
     fileLoader.load('shaders/sky.vert',vshader=>
         fileLoader.load('shaders/sky.frag',fshader=>{ 
             const skyMaterial=new three.ShaderMaterial({
