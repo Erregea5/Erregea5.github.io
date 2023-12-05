@@ -1,0 +1,30 @@
+Make shader paintings
+Make blender museum
+use webpack and three.js
+museum walls are pass-through bounding box that contains museum
+outside museum theres either a trippy scene or something scary
+
+list of artPieces:
+
+gato sc
+spacegeo sc
+deitectives sc
+stocks ai sc
+
+maybe:
+contradiction
+curves
+q learning
+
+shaders
+3d models
+animation
+
+registered:
+gato sc
+spacegeo sc
+deitectives sc
+elephant
+cutie cashew
+baseball bat
+spiral shader

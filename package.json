@@ -1,0 +1,30 @@
+{
+  "name": "art-gallery",
+  "version": "1.0.0",
+  "description": "a portfolio/art project",
+  "main": "main.js",
+  "scripts": {
+    "debug": "webpack --watch",
+    "build": "webpack"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Erregea5/Erregea5.github.io.git"
+  },
+  "author": "sebi",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Erregea5/Erregea5.github.io/issues"
+  },
+  "homepage": "https://github.com/Erregea5/Erregea5.github.io#readme",
+  "dependencies": {
+    "file-saver": "^2.0.5",
+    "three": "^0.158.0"
+  },
+  "devDependencies": {
+    "lil-gui": "^0.19.1",
+    "nodemon": "^3.0.1",
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.4"
+  }
+}
