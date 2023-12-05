@@ -103,7 +103,7 @@ function createScene(){
                 scale:new three.Vector3(1,1,1)
             },
             skyBox:{
-                position:new three.Vector3(0,1.5,0),
+                position:new three.Vector3(0,2.5,0),
                 scale:new three.Vector3(1,1,1)
             }
         };
