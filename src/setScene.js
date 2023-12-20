@@ -2,38 +2,34 @@ import GUI from 'lil-gui';
 import {vec3Control} from './setPaintings';
 import { saveAs } from 'file-saver';
 
-const gui = new GUI();
-gui.domElement.style='position: absolute; top: 2px; left: 2px;'
-
-function vec3(){
-    this.x=0
-}
-const obj={
+const state={
     camera:0,museum:0,ambient:0,spotLight:0,floor:0,skyBox:0
 };
 
 function sceneGui(){
+    const gui = new GUI();
+    gui.domElement.style='position: absolute; top: 0px; left: 0px;';
     const sceneObjects={
         museum:{
-            color:obj.museum.material,
-            position:obj.museum,
-            rotation:obj.museum,
-            scale:obj.museum
+            color:state.museum.material,
+            position:state.museum,
+            rotation:state.museum,
+            scale:state.museum
         },
-        ambient:{color:obj.ambient},
+        ambient:{color:state.ambient},
         spotLight:{
-            color:obj.spotLight,
-            position:obj.spotLight,
-            power:obj.spotLight
+            color:state.spotLight,
+            position:state.spotLight,
+            power:state.spotLight
         },
         floor:{
-            position:obj.floor,
-            color:obj.floor.material,
-            scale:obj.floor
+            position:state.floor,
+            color:state.floor.material,
+            scale:state.floor
         },
         skyBox:{
-            position:obj.skyBox,
-            scale:obj.skyBox
+            position:state.skyBox,
+            scale:state.skyBox
         }
     };
     const printObj={
@@ -54,7 +50,7 @@ function sceneGui(){
             localStorage.removeItem('sceneProps');
             localStorage.setItem('sceneProps',JSON.stringify(out));
         },
-        printPosition:()=>console.log(obj.camera.position)
+        printPosition:()=>console.log(state.camera.position)
     };
     gui.add(printObj,'print');
     gui.add(printObj,'save');
@@ -76,4 +72,5 @@ function sceneGui(){
         }
     }
 }
-export {obj as GuiObjects, sceneGui};
+
+export {state as sceneState, sceneGui};

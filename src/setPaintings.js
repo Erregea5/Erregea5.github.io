@@ -1,34 +1,34 @@
 import GUI from 'lil-gui';
-import {TextureLoader,MeshBasicMaterial,ShaderMaterial,FileLoader,Vector2} from 'three'
+import {TextureLoader,MeshBasicMaterial,ShaderMaterial,FileLoader} from 'three'
 import { saveAs } from 'file-saver';
 
-const gui = new GUI();
-const listGui= gui.addFolder('list');
-let inspect=gui.addFolder('inspector');
+let gui, listGui, inspect, chooser;
+let textureLoader, loader;
 
-const addNewObj={
-    currentName:'',
-    newName:'',
+const state={
+    currentName:'',newName:'',
+    currentShader:'',currentImage:'',currentCanvas:'',currentType:'shader',
     addNew:()=>{},
-    objectNames:[],
-    objects:{},
+    objectNames:[],objects:{},
     getOutput:function(){
         const out={};
         for(let name in this.objects){
-            if(this.objects[name].isImage)
-                out[name]={image:this.objects[name].image};
-            else
-                out[name]={shader:this.objects[name].shader};
-            out[name].position=this.objects[name].position;
-            out[name].rotation=this.objects[name].rotation;
-            out[name].scale=this.objects[name].scale;
-            out[name].color=this.objects[name].children[0].material.color;
-            out[name].text=this.objects[name].text;
-            out[name].isHD=this.objects[name].isHD||false;
-            out[name].light={
-                position:this.objects[name].children[1].position,
-                power:this.objects[name].children[1].power,
-                color:this.objects[name].children[1].color
+            const object=this.objects[name];
+            const cout=out[name]={};
+            
+            cout[object.imageType]=object[object.imageType];
+            cout.imageType=object.imageType;
+            cout.position=object.position;
+            cout.rotation=object.rotation;
+            cout.scale=object.scale;
+            cout.color=object.children[0].material.color;
+            cout.text=object.text;
+            cout.action=object.action;
+            cout.isHD=object.isHD||false;
+            cout.light={
+                position:object.children[1].position,
+                power:object.children[1].power,
+                color:object.children[1].color
             };
         }
         return out;
@@ -51,94 +51,140 @@ const addNewObj={
         this.objectNames.splice(this.objectNames.findIndex(x=>x==this.currentName),1);
         changeObj('',null);
     },
-    currentShader:'',
-    currentImage:'',
-    image:true,
     scene:null,
     uniformObjects:[],
     geometry:{},
-    blend:{}
+    blend:{},
+    actions:[],
+    canvasNames:[],canvases:{}
 };
-listGui.add(addNewObj, 'newName');
-listGui.add(addNewObj,'addNew');
-listGui.add(addNewObj,'print');
-listGui.add(addNewObj,'save');
-let chooser=listGui.addFolder('chooser');
 
-const shaders=['spiral','water','rinnegan','sharingan'];
+const imageTypes=['image','shader','canvas'];
+const shaders=['spiral','water'];
 const images=['DeitectivesIntro.jpg','GatoStart.png','SpaceGeoIntro.png'];
 
-const textureLoader=new TextureLoader();
-const loader=new FileLoader();
+function init(){
+    gui = new GUI();
+    listGui= gui.addFolder('list');
+    inspect=gui.addFolder('inspector');
+    listGui.add(state, 'newName');
+    listGui.add(state,'addNew');
+    listGui.add(state,'print');
+    listGui.add(state,'save');
+    chooser=listGui.addFolder('chooser');
+    textureLoader=new TextureLoader();
+    loader=new FileLoader();
+}
 
 function changeObj(name, obj){
-    addNewObj.currentName=name;
-    if(!(name in addNewObj.objects)){
+    state.currentName=name;
+    if(!(name in state.objects)){
         if(name!=''){
-            addNewObj.objects[name]=obj;
-            addNewObj.objectNames.push(name);
+            state.objects[name]=obj;
+            state.objectNames.push(name);
         }
         chooser.destroy();
         chooser=listGui.addFolder('chooser')
-        chooser.add(addNewObj, 'currentName', addNewObj.objectNames)
+        chooser.add(state, 'currentName', state.objectNames)
             .onChange(v=>{
-                console.log(v+' '+addNewObj.currentName);
-                changeObj(v,addNewObj.objects[v]);
+                console.log(v+' '+state.currentName);
+                changeObj(v,state.objects[v]);
             });
     }
     inspect.destroy();
     if(name=='')
         return;
     inspect=gui.addFolder('inspector');
-    inspect.add(addNewObj,'remove');
+    inspect.add(state,'remove');
 
-    let image;
-    const imageEditor=isImage=>{
-        image=inspect.addFolder('image');
-        if(isImage)
-            image.add(addNewObj,'currentImage',images)
-                .onChange(v=>textureLoader
-                        .load('images/'+v,data=>{
-                            obj.children[obj.children.length-1].material=new MeshBasicMaterial({map:data,...addNewObj.blend});
-                            obj.isImage=true;
-                            obj.image=v;
+    const imageEditor=imageGui(obj);
+    textGui(obj);
+    vectorGui(obj);
+
+    imageEditor(obj.imageType);
+}
+
+function imageGui(obj){
+    if(!obj.imageType)
+        obj.imageType='shader';
+    else
+        state['current'+obj.imageType.charAt(0).toUpperCase() + obj.imageType.slice(1)]=obj[obj.imageType];
+    state.currentType=obj.imageType;
+    
+    let imageFolder;
+    const imageEditor=type=>{
+        imageFolder=inspect.addFolder('image');
+        obj.imageType=type;
+        switch(type){
+        case 'image':
+            imageFolder.add(state,'currentImage',images)
+                .onChange(image=>textureLoader
+                        .load('images/'+image,data=>{
+                            data.anisotropy=2;
+                            obj.children[obj.children.length-1].material=new MeshBasicMaterial({map:data,...state.blend});
+                            obj.image=image;
                         }));
-        else
-            image.add(addNewObj,'currentShader',shaders)
-                .onChange(v=>loader
-                    .load('shaders/'+v+'.vert',vert=>loader
-                        .load('shaders/'+v+'.frag',frag=>{
+            break;
+        case 'shader':
+            imageFolder.add(state,'currentShader',shaders)
+                .onChange(shader=>loader
+                    .load('shaders/'+shader+'.vert',vert=>loader
+                        .load('shaders/'+shader+'.frag',frag=>{
                             obj.children[obj.children.length-1].material=new ShaderMaterial({
                                 uniforms:{iTime:{value:100.0}},
                                 fragmentShader:frag,
                                 vertexShader:vert,
-                                ...addNewObj.blend
+                                ...state.blend
                             });
-                            if(!addNewObj.uniformObjects.includes(obj.children[obj.children.length-1].material.uniforms))
-                                addNewObj.uniformObjects.push(obj.children[obj.children.length-1].material.uniforms);
-                            obj.isImage=false;
-                            obj.shader=v;
+                            if(!state.uniformObjects.includes(obj.children[obj.children.length-1].material.uniforms))
+                                state.uniformObjects.push(obj.children[obj.children.length-1].material.uniforms);
+                            obj.shader=shader;
                         })));
+            break;
+        case 'canvas':
+            imageFolder.add(state,'currentCanvas',state.canvasNames)
+                .onChange(canvas=>{
+                    obj.children[obj.children.length-1].material=new MeshBasicMaterial({map:state.canvases[canvas],...state.blend});
+                    obj.canvas=canvas;
+                });
+        }
     };
-    inspect.add(addNewObj,'image')
+    inspect.add(state,'currentType',imageTypes)
         .onChange(v=>{
-            image.destroy();
+            imageFolder.destroy();
             imageEditor(v);
         });
+
     if(!obj.isHD)
         obj.isHD=false;
     inspect.add(obj, 'isHD')
         .onChange(v=>{
             obj.isHD=v;
             if(v)
-                obj.children[obj.children.length-1].geometry=addNewObj.geometry.HD;
+                obj.children[obj.children.length-1].geometry=state.geometry.HD;
             else
-                obj.children[obj.children.length-1].geometry=addNewObj.geometry.normal;
+                obj.children[obj.children.length-1].geometry=state.geometry.normal;
         });
+    return imageEditor;
+}
 
+function textGui(obj){
+    const text=inspect.addFolder('text');
     if(!obj.text)
-        obj.text='';
-    inspect.add(obj,'text');
+        obj.text={top:'',bottom:'',link:'',href:''};
+    text.add(obj.text,'top');
+    text.add(obj.text,'bottom');
+    
+    const link=text.addFolder('link');
+    link.add(obj.text,'link');
+    link.add(obj.text,'href');
+    
+    if(!obj.action)
+        obj.action='none';
+    inspect.add(obj,'action',state.actions);
+}
+
+function vectorGui(obj){
     inspect.addColor(obj.children[0].material,'color');
     
     vec3Control(inspect,'position',obj.position,1,20,.001);
@@ -148,8 +194,6 @@ function changeObj(name, obj){
     vec3Control(inspect,'light position',obj.children[1].position,1,20,.001);
     inspect.addColor(obj.children[1],'color');
     inspect.add(obj.children[1],'power',0,100,.1);
-    
-    imageEditor(false);
 }
 
 function vec3Control(folder,name,vec3,f,bound,step){
@@ -164,4 +208,4 @@ function vec3Control(folder,name,vec3,f,bound,step){
             .onChange(v=>vec3[d]=v/f);
 }
 
-export {addNewObj,changeObj,vec3Control};
+export {state as paintingState,changeObj,vec3Control,init as paintingGuiInit};

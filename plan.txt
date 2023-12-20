@@ -1,8 +1,9 @@
-Make shader paintings
-Make blender museum
-use webpack and three.js
-museum walls are pass-through bounding box that contains museum
-outside museum theres either a trippy scene or something scary
+TODO:
+    Make shader paintings
+    Fix museum in blender
+    Setup gun range 
+    Make another 2D game
+    Make tree and river room
 
 list of artPieces:
 
@@ -28,3 +29,34 @@ elephant
 cutie cashew
 baseball bat
 spiral shader
+
+
+To the sides theres a map of the place and an introduction.
+turning around they see the door to the eyes, door to a tree with poison, and door to a river
+going forward theres a hall with some of my projects
+forward there's a hallway to the banana gun range
+forward there's a make your own art artPiece
+forward there's a 2d game artpiece
+forward there's a 3d art hallway
+            _________
+  __________|       |
+  |%#               |
+  |%#_______        |
+            |       |
+            |       |
+            |       |__==____==_
+            |                   |
+            |       _____===____|
+            |       |
+            |       |
+  __________|       |
+  |%                |
+  |%________        |
+            |       |
+            |       |__==____==_
+            |                   |
+            |       _____===____|
+            |       |
+            |       |
+            {       }
+            |_#_#_#_|
