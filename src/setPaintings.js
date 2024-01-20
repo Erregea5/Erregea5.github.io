@@ -8,7 +8,7 @@ let textureLoader, loader;
 const state={
     currentName:'',newName:'',
     currentShader:'',currentImage:'',currentCanvas:'',currentType:'shader',
-    addNew:()=>{},
+    addNewGame:()=>{},addNewPainting:()=>{},
     objectNames:[],objects:{},
     getOutput:function(){
         const out={};
@@ -16,6 +16,7 @@ const state={
             const object=this.objects[name];
             const cout=out[name]={};
             
+            cout.frameType=object.frameType;
             cout[object.imageType]=object[object.imageType];
             cout.imageType=object.imageType;
             cout.position=object.position;
@@ -68,7 +69,8 @@ function init(){
     listGui= gui.addFolder('list');
     inspect=gui.addFolder('inspector');
     listGui.add(state, 'newName');
-    listGui.add(state,'addNew');
+    listGui.add(state,'addNewPainting');
+    listGui.add(state,'addNewGame');
     listGui.add(state,'print');
     listGui.add(state,'save');
     chooser=listGui.addFolder('chooser');
@@ -76,41 +78,25 @@ function init(){
     loader=new FileLoader();
 }
 
-function changeObj(name, obj){
-    state.currentName=name;
-    if(!(name in state.objects)){
-        if(name!=''){
-            state.objects[name]=obj;
-            state.objectNames.push(name);
-        }
-        chooser.destroy();
-        chooser=listGui.addFolder('chooser')
-        chooser.add(state, 'currentName', state.objectNames)
-            .onChange(v=>{
-                console.log(v+' '+state.currentName);
-                changeObj(v,state.objects[v]);
-            });
-    }
-    inspect.destroy();
-    if(name=='')
-        return;
-    inspect=gui.addFolder('inspector');
-    inspect.add(state,'remove');
+const vectorGui=obj=>{
+    inspect.addColor(obj.children[0].material,'color');
+    
+    vec3Control(inspect,'position',obj.position,1,20,.001);
+    vec3Control(inspect,'scale',obj.scale,1,10,.001);
+    vec3Control(inspect,'rotation',obj.rotation,180/Math.PI,180,.1);
+    
+    vec3Control(inspect,'light position',obj.children[1].position,1,20,.001);
+    inspect.addColor(obj.children[1],'color');
+    inspect.add(obj.children[1],'power',0,100,.1);
+};
 
-    const imageEditor=imageGui(obj);
-    textGui(obj);
-    vectorGui(obj);
-
-    imageEditor(obj.imageType);
-}
-
-function imageGui(obj){
+const imageGui=obj=>{
     if(!obj.imageType)
         obj.imageType='shader';
     else
         state['current'+obj.imageType.charAt(0).toUpperCase() + obj.imageType.slice(1)]=obj[obj.imageType];
     state.currentType=obj.imageType;
-    
+
     let imageFolder;
     const imageEditor=type=>{
         imageFolder=inspect.addFolder('image');
@@ -166,9 +152,9 @@ function imageGui(obj){
                 obj.children[obj.children.length-1].geometry=state.geometry.normal;
         });
     return imageEditor;
-}
+};
 
-function textGui(obj){
+const textGui=obj=>{
     const text=inspect.addFolder('text');
     if(!obj.text)
         obj.text={top:'',bottom:'',link:'',href:''};
@@ -182,18 +168,34 @@ function textGui(obj){
     if(!obj.action)
         obj.action='none';
     inspect.add(obj,'action',state.actions);
-}
+};
 
-function vectorGui(obj){
-    inspect.addColor(obj.children[0].material,'color');
-    
-    vec3Control(inspect,'position',obj.position,1,20,.001);
-    vec3Control(inspect,'scale',obj.scale,1,10,.001);
-    vec3Control(inspect,'rotation',obj.rotation,180/Math.PI,180,.1);
-    
-    vec3Control(inspect,'light position',obj.children[1].position,1,20,.001);
-    inspect.addColor(obj.children[1],'color');
-    inspect.add(obj.children[1],'power',0,100,.1);
+function changeObj(name, obj){
+    state.currentName=name;
+    if(!(name in state.objects)){
+        if(name!=''){
+            state.objects[name]=obj;
+            state.objectNames.push(name);
+        }
+        chooser.destroy();
+        chooser=listGui.addFolder('chooser')
+        chooser.add(state, 'currentName', state.objectNames)
+            .onChange(v=>{
+                console.log(v+' '+state.currentName);
+                changeObj(v,state.objects[v]);
+            });
+    }
+    inspect.destroy();
+    if(name=='')
+        return;
+    inspect=gui.addFolder('inspector');
+    inspect.add(state,'remove');
+
+    const imageEditor=imageGui(obj);
+    textGui(obj);
+    vectorGui(obj);
+
+    imageEditor(obj.imageType);
 }
 
 function vec3Control(folder,name,vec3,f,bound,step){

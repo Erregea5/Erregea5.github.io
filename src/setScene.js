@@ -2,36 +2,30 @@ import GUI from 'lil-gui';
 import {vec3Control} from './setPaintings';
 import { saveAs } from 'file-saver';
 
-const state={
-    camera:0,museum:0,ambient:0,spotLight:0,floor:0,skyBox:0
-};
+const state={};
 
 function sceneGui(){
     const gui = new GUI();
     gui.domElement.style='position: absolute; top: 0px; left: 0px;';
     const sceneObjects={
-        museum:{
-            color:state.museum.material,
-            position:state.museum,
-            rotation:state.museum,
-            scale:state.museum
-        },
         ambient:{color:state.ambient},
         spotLight:{
             color:state.spotLight,
             position:state.spotLight,
             power:state.spotLight
         },
-        floor:{
-            position:state.floor,
-            color:state.floor.material,
-            scale:state.floor
-        },
-        skyBox:{
-            position:state.skyBox,
-            scale:state.skyBox
-        }
     };
+    const props=['rotation','scale','position']
+    for(let obj in state){
+        if(obj in sceneObjects)
+            continue;
+        sceneObjects[obj]={};
+        if(state[obj].material)
+            sceneObjects[obj].color=state[obj].material;
+        for(let prop of props)
+            if(state[obj][prop])
+                sceneObjects[obj][prop]=state[obj];
+    }
     const printObj={
         getOutput:()=>{
             const out=sceneObjects;
