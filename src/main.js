@@ -1,21 +1,28 @@
+if(('ontouchstart' in window) || (navigator.MaxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0))
+    window.hasTouchPadDevice=true;
+
 import * as three from 'three';
 import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader';
+import {FontLoader} from 'three/addons/loaders/FontLoader.js';
+import {TextGeometry} from 'three/addons/geometries/TextGeometry.js';
 import {paintingState,changeObj,paintingGuiInit} from './setPaintings';
 import {sceneGui,sceneState} from './setScene';
-import {renderText,button,actionList,canvases,games,paused} from './textGui';
+import {renderText,button,actionList,canvases,games} from './textGui';
+import {loadImages} from './state/fireStorage';
 import * as constraints from './constraints';
 
-const DEBUG=true;
+const DEBUG=false;
 
 let scene, camera, renderer;
-
 const imageLoader=new three.TextureLoader();
 const fileLoader=new three.FileLoader();
 const geometryLoader=new GLTFLoader();
+const fontLoader = new FontLoader();
 
 const paintingGeometry=new three.PlaneGeometry(1.512,1.512);
 const paintingGeometryHD=new three.PlaneGeometry(1.512,1.512,300);
 const uniformObjects=[];
+const hitTestObjects=[];
 
 const blend={blending:three.CustomBlending,blendEquation:three.AddEquation};
 
@@ -31,10 +38,39 @@ function init(){
         renderer.setSize( window.innerWidth, window.innerHeight );
     }
     renderer.setSize( window.innerWidth, window.innerHeight );
-    document.body.appendChild( renderer.domElement );
+    document.body.appendChild(renderer.domElement);
     
     createScene();
     createPaintings();
+    const addNew=(model,add)=>{
+        if(DEBUG && paintingState.newName=='')
+            return;
+        if(paintingState.newName in paintingState.objects){
+            if(DEBUG)
+                changeObj(paintingState.newName,paintingState.objects[paintingState.newName]);
+            return;
+        }
+        loadGeometry(model,(data)=>{
+            data.scene.children[0].material.color.setHex(0x2f1f3f);
+            const material = new three.ShaderMaterial(blend);
+            const painting = new three.Mesh(paintingGeometry, material);
+            const spotLight = new three.SpotLight(0xffffff,1000);
+            spotLight.target=painting;
+            data.scene.add(spotLight);
+            
+            add(painting,data.scene);
+
+            scene.add(data.scene);
+            if(DEBUG)
+                changeObj(paintingState.newName,data.scene);
+            else {
+                paintingState.objects[paintingState.newName]=data.scene;
+                paintingState.objectNames.push(paintingState.newName);
+            }
+        });
+    };
+
+    createUserPaintings(addNew);
 
     if(DEBUG){
         paintingGuiInit();
@@ -47,28 +83,6 @@ function init(){
         for(let canvas in paintingState.canvases){
             paintingState.canvases[canvas].anisotropy=4;
             paintingState.canvasNames.push(canvas);
-        }
-
-        const addNew=(model,add)=>{
-            if(paintingState.newName=='')
-                return;
-            if(paintingState.newName in paintingState.objects){
-                changeObj(paintingState.newName,paintingState.objects[paintingState.newName]);
-                return;
-            }
-            loadGeometry(model,(data)=>{
-                data.scene.children[0].material.color.setHex(0x2f1f3f);
-                const material = new three.ShaderMaterial(blend);
-                const painting = new three.Mesh(paintingGeometry, material);
-                const spotLight = new three.SpotLight(0xffffff,1000);
-                spotLight.target=painting;
-                data.scene.add(spotLight);
-
-                add(painting,data.scene);
-
-                scene.add(data.scene);
-                changeObj(paintingState.newName,data.scene);
-            });
         }
         paintingState.addNewPainting=()=>addNew('meshes/paintingFrame.glb',(painting,scene)=>{
             painting.rotateX(Math.PI/2);
@@ -116,7 +130,7 @@ function createScene(){
                     color:0x6f4f7f,
                     scale:new three.Vector3(1,1,1)
                 },
-                skyBox:{
+                eyeBox:{
                     position:new three.Vector3(0,2.5,0),
                     scale:new three.Vector3(1,1,1)
                 }
@@ -133,6 +147,11 @@ function createScene(){
     spotLight.position.copy(props.spotLight.position);
     scene.add(spotLight);
 
+    const underLight = new three.SpotLight(props.underLight.color);
+    underLight.power=props.underLight.power;
+    underLight.position.copy(props.underLight.position);
+    scene.add(underLight);
+
     const floorGeometry=new three.PlaneGeometry(100,100);
     const floorMaterial=new three.MeshPhongMaterial({color:props.floor.color,side:three.DoubleSide});
     const floor=new three.Mesh(floorGeometry,floorMaterial);
@@ -140,6 +159,31 @@ function createScene(){
     floor.position.copy(props.floor.position);
     floor.scale.copy(props.floor.scale);
     scene.add(floor);
+
+    const fontJson = require('three/examples/fonts/helvetiker_regular.typeface.json')
+    const font=fontLoader.parse(fontJson)
+    const texts=['Welcome to my','Art Gallery!','Projects','Games','DIY','Statues'];
+    const textOptions={
+        font: font,
+        size: 80,
+        height: 5,
+        curveSegments: 12,
+        bevelEnabled: true,
+        bevelThickness: 10,
+        bevelSize: 8,
+        bevelOffset: 0,
+        bevelSegments: 5
+    };
+    texts.forEach((str,i)=>{
+        const name='text: '+str;
+        const textGeometry = new TextGeometry(str,textOptions);
+        const text=new three.Mesh(textGeometry,new three.MeshBasicMaterial);
+        text.position.copy(props[name].position);
+        text.scale.copy(props[name].scale);
+        text.rotation.set(props[name].rotation._x,props[name].rotation._y,props[name].rotation._z);
+        scene.add(text);
+        sceneState[name]=text;
+    });
 
     const setupMesh=(url,name,callback)=>{
         const originalName=name;
@@ -156,6 +200,7 @@ function createScene(){
                 callback(data);
             if(DEBUG)
                 sceneState[originalName]=data.scene.children[0];
+            hitTestObjects.push(data.scene.children[0])
         });
     };
 
@@ -182,7 +227,8 @@ function createScene(){
         sceneState.spotLight=spotLight;
         sceneState.ambient=ambientLight;
         sceneState.floor=floor;
-        sceneState.skyBox=eyes;
+        sceneState.eyeBox=eyes;
+        sceneState.underLight=underLight;
         console.log('scene gui',sceneState)
         sceneGui();
     }
@@ -218,8 +264,8 @@ function createScene(){
 
                 eyes.position.set(1,0,4);
 
-                eyes.position.copy(props.skyBox.position);
-                eyes.scale.copy(props.skyBox.scale);
+                eyes.position.copy(props.eyeBox.position);
+                eyes.scale.copy(props.eyeBox.scale);
                 scene.add(eyes);
                 
                 if(DEBUG)
@@ -254,10 +300,10 @@ function createPaintings(){
             data.scene.frameType=painting.frameType;
 
             const add=paint=>{
-                const spotLight = new three.SpotLight(painting.light.color);
-                spotLight.power=painting.light.power;
-                spotLight.target=paint;
-                data.scene.add(spotLight);
+                //const spotLight = new three.SpotLight(painting.light.color);
+                //spotLight.power=painting.light.power;
+                //spotLight.target=paint;
+                //data.scene.add(spotLight);
                 if(painting.frameType==='painting')
                     paint.rotateX(Math.PI/2);
                 else{
@@ -266,11 +312,16 @@ function createPaintings(){
                     paint.rotateY(Math.PI/2);
                     paint.position.set(.26*10,1.142*10,0);
                 }
-                spotLight.position.copy(painting.light.position);
+                //spotLight.position.copy(painting.light.position);
                 data.scene.add(paint);
                 scene.add(data.scene);
                 if(DEBUG)
                     changeObj(name,data.scene);
+                else if(!(name in paintingState.objects) && name!=''){
+                    paintingState.objects[name]=data.scene;
+                    paintingState.objectNames.push(name);
+                }
+                
             };
             const paintGeo=painting.isHD?paintingGeometryHD:paintingGeometry;
             switch(painting.imageType){
@@ -297,12 +348,39 @@ function createPaintings(){
                 break;
             case('canvas'):
                 data.scene.canvas=painting.canvas;
-                canvases[painting.canvas].anisotropy=4;
+                //canvases[painting.canvas].anisotropy=4;
                 add(new three.Mesh(paintGeo,new three.MeshBasicMaterial({map:canvases[painting.canvas],...blend})));
                 break;
             }
         });
     }
+}
+
+let currentUserPainting=2;
+const userPaintingsTransform=require('./state/userPaintingsTransforms.json');
+function createUserPaintings(addNew){
+    loadImages(val=>{
+        paintingState.newName=val.name;
+        console.log(val)
+        addNew('meshes/paintingFrame.glb',(painting,scene)=>{
+            const texture=new three.CanvasTexture(val.img);
+            painting.material=new three.MeshBasicMaterial({map:texture,...blend});
+            painting.rotateX(Math.PI/2);
+            scene.add(painting);
+            scene.rotateX(-Math.PI/2);
+            const transform=userPaintingsTransform[currentUserPainting];
+            currentUserPainting++;
+            if(transform){
+                scene.position.copy(transform.position);
+                scene.rotation.set(transform.rotation._x,transform.rotation._y,transform.rotation._z);
+            }
+            scene.frameType='painting';
+            scene.text={top:'',bottom:'',link:'',href:''};
+            scene.text.top=val.name;
+            scene.text.bottom=val.caption;
+            scene.doNotSave=true;
+        });
+    });
 }
 
 const geometryCache={};
@@ -318,9 +396,7 @@ function loadGeometry(text,callback){
 
 const clock=new three.Clock();
 function update(){
-    constraints.manageHealth();
-    constraints.move(clock.getDelta());
-    //constraints.keepInBounds(camera.position);
+    constraints.update(clock.getDelta());
     for(let uniform of uniformObjects)
         if(uniform.iTime)
             uniform.iTime.value=clock.elapsedTime;
@@ -332,9 +408,9 @@ function update(){
 }
 
 function animate() {
-    if(games.paused)
-    	requestAnimationFrame(animate);
-    update();
+  if(games.paused)
+  	requestAnimationFrame(animate);
+  update();
 	renderer.render(scene,camera);
 }
 
@@ -342,13 +418,13 @@ for(let game in games){
     if(game==='paused')
         continue;
     const unbindKeys=()=>{
-        console.log('go carsu')
         games[game].bindKeys(constraints.player);
+        clock.getDelta();
         animate();
     };
     games[game].unbindKeys=unbindKeys;
 }
 
 init();
-constraints.init(button,renderer,camera,games);
+constraints.init(button,renderer,camera,hitTestObjects,games);
 animate();

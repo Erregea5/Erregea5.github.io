@@ -14,6 +14,8 @@ const state={
         const out={};
         for(let name in this.objects){
             const object=this.objects[name];
+            if(object.doNotSave)
+                continue;
             const cout=out[name]={};
             
             cout.frameType=object.frameType;
@@ -81,13 +83,15 @@ function init(){
 const vectorGui=obj=>{
     inspect.addColor(obj.children[0].material,'color');
     
-    vec3Control(inspect,'position',obj.position,1,20,.001);
+    vec3Control(inspect,'position',obj.position,1,50,.01);
     vec3Control(inspect,'scale',obj.scale,1,10,.001);
     vec3Control(inspect,'rotation',obj.rotation,180/Math.PI,180,.1);
     
     vec3Control(inspect,'light position',obj.children[1].position,1,20,.001);
-    inspect.addColor(obj.children[1],'color');
-    inspect.add(obj.children[1],'power',0,100,.1);
+    if(obj.children[1]&&obj.children[1].color){
+        inspect.addColor(obj.children[1],'color');
+        inspect.add(obj.children[1],'power',0,100,.1);
+    }
 };
 
 const imageGui=obj=>{

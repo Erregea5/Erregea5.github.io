@@ -1,13 +1,20 @@
 import gameObject from "./gameObject";
 const canvas=document.createElement('canvas');
-canvas.width=window.innerWidth;
-canvas.height=window.innerHeight;
+canvas.width=window.screen.width;
+canvas.height=window.screen.height;
+const key='Xfj3F';
 const ctx=canvas.getContext('2d');
+const state={onPlay:()=>{}, onPause:()=>{}, canvas, bindKeys:()=>{}, unbindKeys:()=>{}};
+state.onLoad=()=>{};
+state.onSave=()=>{};
 
-let time=0,maxKills=0,kills=0;
+let time=0;
+let maxKills=localStorage.getItem(key)||0;
+let globalMaxKills;
+state.onLoad(score=>globalMaxKills=score);
+let kills=0;
 let baseHealth=1;
 let pause=true;
-const state={onPlay:()=>{}, onPause:()=>{}, canvas, bindKeys:()=>{}, unbindKeys:()=>{}};
 const enemies=[];
 let bullets=[];
 let player;
@@ -42,7 +49,7 @@ class turret extends gameObject{
   constructor(x,y,scale,angle,color,speed){
     super(canvas,ctx,scale,color,speed,angle,x,y);
     this.health=1;
-    this.shoot=this.moveForward=this.moveBackward=this.moveLeft=this.moveRight=0;
+    this.moveForward=this.moveBackward=this.moveLeft=this.moveRight=0;
     this.time=0;
   }
   drawPattern(){
@@ -59,7 +66,8 @@ class turret extends gameObject{
     this.drawTo(1,-1,cos,sin);
   }
   update(){
-    if(this.shoot&&this.time>4){
+    this.y=canvas.height*.8;
+    if(this.time>4){
       bullets.push(new bullet(this.x,this.y,5,this.angle,'red',12));
       this.time=0;
     }
@@ -139,7 +147,7 @@ class enemy extends gameObject{
 }
 
 
-player=new turret(canvas.width/2,canvas.height-100,10,0,'red',3);
+player=new turret(canvas.width/2,canvas.height*.8,10,0,'red',3);
 for(let i=0;i<10;i++){
   const e=new enemy(20,'white',2);
   e.spawn();
@@ -147,7 +155,14 @@ for(let i=0;i<10;i++){
 }
 
 function restart(){
-  maxKills=Math.max(maxKills,kills);
+  if(kills>maxKills){
+    maxKills=kills;
+    localStorage.setItem(key,kills);
+    if(maxKills>globalMaxKills){
+      globalMaxKills=maxKills;
+      state.onSave(maxKills);
+    }
+  }
   bullets.length=0;
   enemies.length=10;
   enemies.forEach(enemy=>enemy.spawn());

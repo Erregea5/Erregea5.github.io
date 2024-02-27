@@ -14,6 +14,11 @@ function sceneGui(){
             position:state.spotLight,
             power:state.spotLight
         },
+        underLight:{
+            color:state.underLight,
+            position:state.underLight,
+            power:state.underLight
+        },
     };
     const props=['rotation','scale','position']
     for(let obj in state){
@@ -28,10 +33,12 @@ function sceneGui(){
     }
     const printObj={
         getOutput:()=>{
-            const out=sceneObjects;
-            for(let obj in out)
-                for(let prop in out[obj])
-                    out[obj][prop]=out[obj][prop][prop];
+            const out={};
+            for(let obj in sceneObjects){
+                out[obj]={};
+                for(let prop in sceneObjects[obj])
+                    out[obj][prop]=sceneObjects[obj][prop][prop];
+            }
             return out;
         },
         print:function(){
@@ -50,7 +57,8 @@ function sceneGui(){
     gui.add(printObj,'save');
     gui.add(printObj,'printPosition');
     for(let object in sceneObjects){
-        let folder=gui.addFolder(object);
+        let folder=gui.addFolder(object.toUpperCase());
+        folder.close(); 
         for(let prop in sceneObjects[object]){
             if(prop=='color')
                 folder.addColor(sceneObjects[object][prop],prop);

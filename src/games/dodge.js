@@ -6,6 +6,9 @@ canvas.height=window.innerHeight;
 //document.body.appendChild(canvas);
 const key='Qw?5a$';
 const ctx=canvas.getContext('2d');
+const state={onPlay:()=>{}, onPause:()=>{}, canvas, bindKeys:()=>{}, unbindKeys:()=>{}};
+state.onLoad=()=>{};
+state.onSave=()=>{};
 
 const enemies=[];
 const spawnRadius=75000;
@@ -18,9 +21,10 @@ let explosionLoaded=false;
 explosionImage.onload=()=>explosionLoaded=true;
 let level=1,kills=0;
 let maxScore=localStorage.getItem(key)||1;
+let globalMaxScore;
+state.onLoad(score=>globalMaxScore=score);
 let time=0;
 let pause=true;
-const state={onPlay:()=>{}, onPause:()=>{}, canvas, bindKeys:()=>{}, unbindKeys:()=>{}};
 const explosions={};
 function explode(x,y){
   explosions[[x,y]]=100;
@@ -121,6 +125,10 @@ player.hit=function(){
   if(score>maxScore){
     maxScore=score;
     localStorage.setItem(key,score);
+    if(maxScore>globalMaxScore){
+      globalMaxScore=maxScore;
+      state.onSave(maxScore);
+    }
   }
   while(level>1){
     level--;
